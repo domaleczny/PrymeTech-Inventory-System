@@ -5,7 +5,11 @@ from werkzeug.utils import secure_filename
 
 import import_inventory
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    static_folder="images",
+    static_url_path="/static/images",
+)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "inventory-secret-key")
 DB_PATH = os.environ.get("INVENTORY_DB", import_inventory.DB_PATH)
 
