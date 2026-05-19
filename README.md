@@ -1,1 +1,0 @@
-# PrymeTech-Inventory-System
