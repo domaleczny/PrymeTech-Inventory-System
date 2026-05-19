@@ -1,0 +1,14 @@
+{% extends 'layout.html' %}
+{% block content %}
+  <h1>Import Inventory</h1>
+  <form method="post" enctype="multipart/form-data">
+    <div class="mb-3">
+      <label class="form-label">Excel file</label>
+      <input class="form-control" type="file" name="file" accept=".xlsx,.xls">
+    </div>
+    <button class="btn btn-primary">Upload and Import</button>
+  </form>
+  <div class="mt-4">
+    <p>Upload the first sheet from an Excel file. Headers may include variants such as Part No, Description, Location, Qty, Min Qty, Customer, and Last Modify Date.</p>
+  </div>
+{% endblock %}

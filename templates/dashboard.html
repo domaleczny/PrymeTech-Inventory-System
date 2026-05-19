@@ -1,0 +1,45 @@
+{% extends 'layout.html' %}
+{% block content %}
+  <h1>Dashboard</h1>
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="card text-bg-primary mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Total inventory items</h5>
+          <p class="card-text display-6">{{ total_items }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card text-bg-warning mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Low stock items</h5>
+          <p class="card-text display-6">{{ low_stock_count }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Low stock preview</h2>
+  {% if low_stock_items %}
+    <div class="table-responsive">
+      <table class="table table-sm table-striped">
+        <thead>
+          <tr><th>Part</th><th>Qty</th><th>Min</th><th>Location</th></tr>
+        </thead>
+        <tbody>
+          {% for item in low_stock_items %}
+            <tr>
+              <td><a href="{{ url_for('item_detail', item_id=item.id) }}">{{ item.part_number }}</a></td>
+              <td>{{ item.quantity }}</td>
+              <td>{{ item.min_quantity }}</td>
+              <td>{{ item.location or '-' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>No low stock items at the moment.</p>
+  {% endif %}
+{% endblock %}
