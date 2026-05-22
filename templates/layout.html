@@ -37,8 +37,8 @@
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
-          <ul class="navbar-nav mb-2 mb-lg-0">
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-5 mb-2 mb-lg-0">
             <li class="nav-item">
               <a class="nav-link{% if request.path.startswith('/inventory') %} active{% endif %}" href="{{ url_for('inventory_list') }}">Inventory</a>
             </li>

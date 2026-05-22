@@ -100,18 +100,18 @@ def parse_date(value, field_name):
         return None
 
     if isinstance(value, datetime):
-        return value.isoformat(timespec="seconds")
+        return value.strftime("%m-%d-%Y")
 
     try:
         parsed = pd.to_datetime(value, errors="raise")
     except (ValueError, TypeError) as exc:
         raise ValueError(f"Invalid date for {field_name}: {value}") from exc
 
-    return parsed.isoformat(timespec="seconds")
+    return parsed.strftime("%m-%d-%Y")
 
 
-def now_iso():
-    return datetime.now().replace(microsecond=0).isoformat()
+def now_date():
+    return datetime.now().strftime("%m-%d-%Y")
 
 
 def get_db_connection(db_path=DB_PATH):
@@ -131,7 +131,7 @@ def ensure_schema(conn):
 
 
 def record_change(conn, part_number, action, diff, changed_by="system"):
-    timestamp = now_iso()
+    timestamp = now_date()
     conn.execute(
         "INSERT INTO changes (part_number, action, changed_by, timestamp, diff) VALUES (?, ?, ?, ?, ?)",
         (part_number, action, changed_by, timestamp, json.dumps(diff, default=str)),
@@ -201,7 +201,7 @@ def make_record(row, mapping, row_number):
     record["location"] = None
     record["customer"] = None
     record["min_quantity"] = 0
-    record["last_modify_date"] = now_iso()
+    record["last_modify_date"] = now_date()
 
     if "description" in mapping:
         description = row[mapping["description"]]

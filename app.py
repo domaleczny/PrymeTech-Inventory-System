@@ -98,7 +98,7 @@ def item_detail(item_id):
                 changed[field] = {"old": item[field], "new": value}
 
         if changed:
-            now = import_inventory.now_iso()
+            now = import_inventory.now_date()
             conn.execute(
                 "UPDATE inventory SET description = ?, location = ?, quantity = ?, min_quantity = ?, customer = ?, last_modify_date = ? WHERE id = ?",
                 (
@@ -225,7 +225,7 @@ def api_inventory_item(item_id):
             changed[field] = {"old": existing_value, "new": new_value}
 
     if changed:
-        now = import_inventory.now_iso()
+        now = import_inventory.now_date()
         conn.execute(
             "UPDATE inventory SET description = ?, location = ?, quantity = ?, min_quantity = ?, customer = ?, last_modify_date = ? WHERE id = ?",
             (
