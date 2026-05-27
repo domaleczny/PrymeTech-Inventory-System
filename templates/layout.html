@@ -52,10 +52,10 @@
               <a class="nav-link{% if request.path == '/import' %} active{% endif %}" href="{{ url_for('import_page') }}">Import</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link{% if request.path == '/probe-import' %} active{% endif %}" href="{{ url_for('probe_import_page') }}">Probe Import</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link{% if request.path == '/export' %} active{% endif %}" href="{{ url_for('export_page') }}?format=csv">Export</a>
+              <a class="btn btn-light ms-2"
+                href="{{ url_for('export_page') }}?format=csv">
+                Export
+              </a>
             </li>
           </ul>
         </div>

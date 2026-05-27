@@ -259,7 +259,7 @@ def import_page():
             )
         except Exception as exc:
             flash(f"Import failed: {exc}", "error")
-        return redirect(url_for("import_page"))
+        return redirect(url_for("import_export_page"))
 
     return render_template("import.html")
 

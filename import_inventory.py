@@ -326,55 +326,42 @@ def make_probe_record(row, mapping, row_number):
 
     return record
 
-def import_excel(path, db_path=DB_PATH, sheet_name=0, changed_by="importer"):
-    df = pd.read_excel(path, sheet_name=sheet_name, engine="openpyxl")
-    if df.empty:
-        raise ValueError("Excel file is empty or has no rows")
-
-    mapping = build_column_map(df.columns)
-    missing = [col for col in REQUIRED_COLUMNS if col not in mapping]
-    if missing:
-        raise ValueError(f"Missing required columns in Excel: {', '.join(missing)}")
-
-    summary = {"inserted": 0, "updated": 0, "skipped": 0, "invalid_rows": []}
+def import_excel(path, db_path=DB_PATH, changed_by="importer"):
+    sheets = pd.read_excel(path, sheet_name=None, engine="openpyxl")
     conn = get_db_connection(db_path)
-    for index, row in df.iterrows():
-        try:
-            record = make_record(row, mapping, index + 2)
-        except ValueError as exc:
-            summary["invalid_rows"].append({"row": index + 2, "reason": str(exc), "data": {}})
-            continue
 
-        action = upsert_inventory(conn, record, changed_by=changed_by)
-        summary[action] += 1
+    summary = {
+        "inventory_inserted": 0,
+        "inventory_updated": 0,
+        "inventory_skipped": 0,
+        "probe_inserted": 0,
+        "probe_updated": 0,
+        "probe_skipped": 0,
+        "invalid_rows": []
+    }
+
+    for sheet_name, df in sheets.items():
+        sheet_lower = sheet_name.lower()
+
+        for i, row in df.iterrows():
+            try:
+                if "probe" in sheet_lower:
+                    record = make_probe_record(row, build_column_map(df.columns), i + 2)
+                    action = upsert_probe_inventory(conn, record, changed_by)
+                    summary[f"probe_{action}"] += 1
+                else:
+                    record = make_record(row, build_column_map(df.columns), i + 2)
+                    action = upsert_inventory(conn, record, changed_by)
+                    summary[f"inventory_{action}"] += 1
+
+            except Exception as exc:
+                summary["invalid_rows"].append({
+                    "sheet": sheet_name,
+                    "row": i + 2,
+                    "reason": str(exc)
+                })
 
     return summary
-
-
-def import_probe_excel(path, db_path=DB_PATH, sheet_name=1, changed_by="importer"):
-    df = pd.read_excel(path, sheet_name=sheet_name, engine="openpyxl")
-    if df.empty:
-        raise ValueError("Excel file is empty or has no rows")
-
-    mapping = build_column_map(df.columns)
-    missing = [col for col in REQUIRED_COLUMNS if col not in mapping]
-    if missing:
-        raise ValueError(f"Missing required columns in Excel: {', '.join(missing)}")
-
-    summary = {"inserted": 0, "updated": 0, "skipped": 0, "invalid_rows": []}
-    conn = get_db_connection(db_path)
-    for index, row in df.iterrows():
-        try:
-            record = make_probe_record(row, mapping, index + 2)
-        except ValueError as exc:
-            summary["invalid_rows"].append({"row": index + 2, "reason": str(exc), "data": {}})
-            continue
-
-        action = upsert_probe_inventory(conn, record, changed_by=changed_by)
-        summary[action] += 1
-
-    return summary
-
 
 def inventory_query(conn, low_stock=False, location=None, customer=None, search=None):
     query = "SELECT * FROM inventory"
