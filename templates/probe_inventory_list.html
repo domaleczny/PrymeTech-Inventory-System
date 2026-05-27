@@ -1,6 +1,6 @@
 {% extends 'layout.html' %}
 {% block content %}
-  <h1>Master Inventory</h1>
+  <h1>Probe Inventory</h1>
   <form class="row g-3 mb-3" method="get">
     <div class="col-md-5">
       <input type="text" name="search" class="form-control" placeholder="Enter part number or description" value="{{ search }}">
@@ -20,14 +20,14 @@
       <ul class="dropdown-menu">
         <li>
           <a class="dropdown-item"
-            href="{{ url_for('inventory_list') }}">
+            href="{{ url_for('probe_inventory_list') }}">
           </a>
         </li>
         {% for c in customers %}
           <li>
             <a class="dropdown-item"
               href="{{ url_for(
-                    'inventory_list',
+                    'probe_inventory_list',
                     customer=c,
                     search=search,
                     low_stock='1' if low_stock else ''
@@ -41,12 +41,12 @@
     <div class="col-md-2">
       <div class="form-check mt-1">
         <input class="form-check-input" type="checkbox" id="low_stock" name="low_stock" value="1" {% if low_stock %}checked{% endif %}>
-        <label class="form-check-label" for="low_stock">Show Low Stock</label> 
+        <label class="form-check-label" for="low_stock">Show Low Stock</label>
       </div>
     </div>
     <div class="col-md-3">
       <button class="btn btn-primary">Search</button>
-      <a class="btn btn-secondary" href="{{ url_for('inventory_list') }}">Reset</a>
+      <a class="btn btn-secondary" href="{{ url_for('probe_inventory_list') }}">Reset</a>
     </div>
   </form>
 
@@ -60,6 +60,7 @@
           <th>Description</th>
           <th>Location</th>
           <th>Qty</th>
+          <th>Min Qty</th>
           <th>Supplier</th>
           <th>Last Modified</th>
         </tr>
@@ -67,10 +68,11 @@
       <tbody>
         {% for item in items %}
           <tr>
-            <td><a href="{{ url_for('item_detail', item_id=item.id) }}">{{ item.part_number }}</a></td>
+            <td><a href="{{ url_for('probe_item_detail', item_id=item.id) }}">{{ item.part_number }}</a></td>
             <td>{{ item.description or '' }}</td>
             <td>{{ item.location or '' }}</td>
             <td>{{ item.quantity }}</td>
+            <td>{{ item.min_quantity }}</td>
             <td>{{ item.customer or '' }}</td>
             <td>{{ item.last_modify_date }}</td>
           </tr>

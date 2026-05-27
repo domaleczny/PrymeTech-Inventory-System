@@ -14,26 +14,33 @@ SCHEMA_FILE = os.path.join(os.path.dirname(__file__), "create_schema.sql")
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 HEADER_SYNONYMS = {
-    "part_number": ["part number", "part #", "part no", "sku", "item"],
-    "description": ["desc", "details"],
-    "location": ["loc", "bin", "warehouse", "storage"],
-    "quantity": ["qty", "qty in stock", "qtyinstock", "amount", "count", "stock"],
-    "min_quantity": ["min qty", "min bin qty", "minbinqty", "minimum quantity", "reorder level"],
-    "customer": ["client", "account", "owner"],
-    "last_modify_date": [
-        "last modify date",
-        "last modified",
-        "last modified date",
-        "modified",
-        "updated_at",
-        "updated",
-    ],
+    "part_number": ["part number"],
+    "description": ["part description"],
+    "location": ["loc"],
+    "quantity": ["qty", "qty in stock", "qtyinstock", "in-stock quantity"],
+    "min_quantity": ["min bin qty", "minbinqty"],
+    "customer": ["supplier"],
+    "last_modify_date": ["last modify date"],
+    # probe-specific
+    "thread_size": ["thread size"],
+    "sphere_dk": ["ø sphere (dk)", "sphere (dk)"],
+    "length": ["length (l)"],
+    "ml_ewl": ["ml / ewl", "ml/ewl"],
+    "tip_material": ["tip material"],
+    "shaft_material": ["shaft material"],
+    "probe_type": ["probe type"],
+    "link": ["link to part"],
 }
 
 REQUIRED_COLUMNS = ["part_number", "quantity"]
 OPTIONAL_COLUMNS = ["description", "location", "min_quantity", "customer", "last_modify_date"]
 ALL_COLUMNS = REQUIRED_COLUMNS + OPTIONAL_COLUMNS
 
+PROBE_OPTIONAL_COLUMNS = [
+    "thread_size", "sphere_dk", "length", "ml_ewl",
+    "tip_material", "shaft_material", "probe_type", "link"
+]
+PROBE_ALL_COLUMNS = ALL_COLUMNS + PROBE_OPTIONAL_COLUMNS
 
 def normalize_header(value):
     if value is None:
@@ -152,6 +159,13 @@ def is_record_different(existing, record):
             return True
     return False
 
+def is_probe_record_different(existing, record):
+    fields = ["description", "location", "quantity", "min_quantity", "customer"] + PROBE_OPTIONAL_COLUMNS
+    for field in fields:
+        if existing.get(field) != record.get(field):
+            return True
+    return False
+
 
 def upsert_inventory(conn, record, changed_by="importer"):
     existing = fetch_inventory_item(conn, record["part_number"])
@@ -187,6 +201,79 @@ def upsert_inventory(conn, record, changed_by="importer"):
         ),
     )
     diff = {field: {"old": existing.get(field), "new": record.get(field)} for field in ["description", "location", "quantity", "min_quantity", "customer"] if existing.get(field) != record.get(field)}
+    record_change(conn, record["part_number"], "update", diff, changed_by)
+    return "updated"
+
+
+def fetch_probe_inventory_item(conn, part_number):
+    row = conn.execute("SELECT * FROM probe_inventory WHERE part_number = ?", (part_number,)).fetchone()
+    if row is None:
+        return None
+    return dict(row)
+
+
+def upsert_probe_inventory(conn, record, changed_by="importer"):
+    existing = fetch_probe_inventory_item(conn, record["part_number"])
+    if existing is None:
+        conn.execute(
+            """INSERT INTO probe_inventory (
+                part_number, description, location, quantity, min_quantity, customer, last_modify_date,
+                thread_size, sphere_dk, length, ml_ewl, tip_material, shaft_material, probe_type, link
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                record["part_number"],
+                record.get("description"),
+                record.get("location"),
+                record.get("quantity", 0),
+                record.get("min_quantity", 0),
+                record.get("customer"),
+                record.get("last_modify_date"),
+                record.get("thread_size"),
+                record.get("sphere_dk"),
+                record.get("length"),
+                record.get("ml_ewl"),
+                record.get("tip_material"),
+                record.get("shaft_material"),
+                record.get("probe_type"),
+                record.get("link"),
+            ),
+        )
+        record_change(conn, record["part_number"], "create", record, changed_by)
+        return "inserted"
+
+    if not is_probe_record_different(existing, record):
+        return "skipped"
+
+    conn.execute(
+        """UPDATE probe_inventory SET
+            description = ?, location = ?, quantity = ?, min_quantity = ?, customer = ?, last_modify_date = ?,
+            thread_size = ?, sphere_dk = ?, length = ?, ml_ewl = ?,
+            tip_material = ?, shaft_material = ?, probe_type = ?, link = ?
+        WHERE part_number = ?""",
+        (
+            record.get("description"),
+            record.get("location"),
+            record.get("quantity", 0),
+            record.get("min_quantity", 0),
+            record.get("customer"),
+            record.get("last_modify_date"),
+            record.get("thread_size"),
+            record.get("sphere_dk"),
+            record.get("length"),
+            record.get("ml_ewl"),
+            record.get("tip_material"),
+            record.get("shaft_material"),
+            record.get("probe_type"),
+            record.get("link"),
+            record["part_number"],
+        ),
+    )
+    all_fields = ["description", "location", "quantity", "min_quantity", "customer"] + PROBE_OPTIONAL_COLUMNS
+    diff = {
+        field: {"old": existing.get(field), "new": record.get(field)}
+        for field in all_fields
+        if existing.get(field) != record.get(field)
+    }
     record_change(conn, record["part_number"], "update", diff, changed_by)
     return "updated"
 
@@ -227,6 +314,17 @@ def make_record(row, mapping, row_number):
 
     return record
 
+def make_probe_record(row, mapping, row_number):
+    record = make_record(row, mapping, row_number)  # handles the shared fields
+
+    for field in PROBE_OPTIONAL_COLUMNS:
+        if field in mapping:
+            value = row[mapping[field]]
+            record[field] = None if pd.isna(value) else str(value).strip()
+        else:
+            record[field] = None
+
+    return record
 
 def import_excel(path, db_path=DB_PATH, sheet_name=0, changed_by="importer"):
     df = pd.read_excel(path, sheet_name=sheet_name, engine="openpyxl")
@@ -253,6 +351,31 @@ def import_excel(path, db_path=DB_PATH, sheet_name=0, changed_by="importer"):
     return summary
 
 
+def import_probe_excel(path, db_path=DB_PATH, sheet_name=1, changed_by="importer"):
+    df = pd.read_excel(path, sheet_name=sheet_name, engine="openpyxl")
+    if df.empty:
+        raise ValueError("Excel file is empty or has no rows")
+
+    mapping = build_column_map(df.columns)
+    missing = [col for col in REQUIRED_COLUMNS if col not in mapping]
+    if missing:
+        raise ValueError(f"Missing required columns in Excel: {', '.join(missing)}")
+
+    summary = {"inserted": 0, "updated": 0, "skipped": 0, "invalid_rows": []}
+    conn = get_db_connection(db_path)
+    for index, row in df.iterrows():
+        try:
+            record = make_probe_record(row, mapping, index + 2)
+        except ValueError as exc:
+            summary["invalid_rows"].append({"row": index + 2, "reason": str(exc), "data": {}})
+            continue
+
+        action = upsert_probe_inventory(conn, record, changed_by=changed_by)
+        summary[action] += 1
+
+    return summary
+
+
 def inventory_query(conn, low_stock=False, location=None, customer=None, search=None):
     query = "SELECT * FROM inventory"
     clauses = []
@@ -264,11 +387,41 @@ def inventory_query(conn, low_stock=False, location=None, customer=None, search=
         clauses.append("location LIKE ?")
         params.append(f"%{location}%")
     if customer:
-        clauses.append("customer LIKE ?")
-        params.append(f"%{customer}%")
+        clauses.append("LOWER(customer) LIKE LOWER(?)")
+        params.append(f"%{customer.strip()}%")
     if search:
-        clauses.append("(part_number LIKE ? OR description LIKE ?)")
-        params.extend([f"%{search}%", f"%{search}%"])
+        clauses.append("""
+            (LOWER(part_number) LIKE LOWER(?)
+            OR LOWER(description) LIKE LOWER(?))
+        """)
+        params.extend([f"%{search.strip()}%", f"%{search.strip()}%"])
+
+    if clauses:
+        query += " WHERE " + " AND ".join(clauses)
+
+    query += " ORDER BY part_number ASC"
+    return conn.execute(query, params).fetchall()
+
+
+def probe_inventory_query(conn, low_stock=False, location=None, customer=None, search=None):
+    query = "SELECT * FROM probe_inventory"
+    clauses = []
+    params = []
+
+    if low_stock:
+        clauses.append("quantity < min_quantity")
+    if location:
+        clauses.append("location LIKE ?")
+        params.append(f"%{location}%")
+    if customer:
+        clauses.append("LOWER(customer) LIKE LOWER(?)")
+        params.append(f"%{customer.strip()}%")
+    if search:
+        clauses.append("""
+            (LOWER(part_number) LIKE LOWER(?)
+            OR LOWER(description) LIKE LOWER(?))
+        """)
+        params.extend([f"%{search.strip()}%", f"%{search.strip()}%"])
 
     if clauses:
         query += " WHERE " + " AND ".join(clauses)

@@ -1,0 +1,84 @@
+{% extends 'layout.html' %}
+{% block content %}
+  <h1>Probe Item Detail</h1>
+  <form method="post">
+    <h3>Basic Information</h3>
+    <div class="mb-3">
+      <label class="form-label">Part Number</label>
+      <input class="form-control" value="{{ item.part_number }}" disabled>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Description</label>
+      <input class="form-control" name="description" value="{{ item.description or '' }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Location</label>
+      <input class="form-control" name="location" value="{{ item.location or '' }}">
+    </div>
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Quantity</label>
+        <input class="form-control" name="quantity" type="number" value="{{ item.quantity }}">
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Min Quantity</label>
+        <input class="form-control" name="min_quantity" type="number" value="{{ item.min_quantity }}">
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Customer</label>
+        <input class="form-control" name="customer" value="{{ item.customer or '' }}">
+      </div>
+    </div>
+
+    <h3 class="mt-4">Probe Specifications</h3>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Thread Size</label>
+        <input class="form-control" name="thread_size" value="{{ item.thread_size or '' }}">
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Sphere (DK)</label>
+        <input class="form-control" name="sphere_dk" value="{{ item.sphere_dk or '' }}">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Length</label>
+        <input class="form-control" name="length" value="{{ item.length or '' }}">
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">ML/EWL</label>
+        <input class="form-control" name="ml_ewl" value="{{ item.ml_ewl or '' }}">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Tip Material</label>
+        <input class="form-control" name="tip_material" value="{{ item.tip_material or '' }}">
+      </div>
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Shaft Material</label>
+        <input class="form-control" name="shaft_material" value="{{ item.shaft_material or '' }}">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label class="form-label">Probe Type</label>
+        <input class="form-control" name="probe_type" value="{{ item.probe_type or '' }}">
+      </div>
+      <div class="col-md-6 mb-3">
+        {% if item.link %}
+          <a href="{{ item.link }}" target="_blank" class="form-text">Link</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="mb-3 mt-4">
+      <label class="form-label">Last Modified</label>
+      <input class="form-control" value="{{ item.last_modify_date }}" disabled>
+    </div>
+    <input type="hidden" name="last_modify_date" value="{{ item.last_modify_date }}">
+    <button class="btn btn-primary" type="submit">Save Changes</button>
+    <a class="btn btn-secondary" href="{{ url_for('probe_inventory_list') }}">Back</a>
+  </form>
+{% endblock %}
