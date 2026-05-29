@@ -1,12 +1,15 @@
 {% extends 'layout.html' %}
 {% block content %}
-  <h2>Import Excel File</h2>
+  <h1 style="color: #1f396e;">Import Excel File</h1>
   <form method="post" enctype="multipart/form-data">
-    <p>Upload inventory Excel file to import data.</p>
+    <p>Upload Excel file to import inventory data.</p>
     <div class="mb-3">
       <input class="form-control" type="file" name="file" accept=".xlsx,.xls">
     </div>
-    <button class="btn btn-primary mb-4">Import</button>
+    <button class="btn mb-4" style="background-color: #1f396e; color: white;">
+      <i class="bi bi-file-earmark-arrow-up"></i>
+      Import
+    </button>
   </form>
   
 {% endblock %}

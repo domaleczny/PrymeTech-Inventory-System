@@ -1,80 +1,60 @@
 {% extends 'layout.html' %}
+{% from '_inventory_macros.html' import search_form %}
 {% block content %}
-  <h1>Probe Inventory</h1>
-  <form class="row g-3 mb-3" method="get">
-    <div class="col-md-5">
-      <input type="text" name="search" class="form-control" placeholder="Enter part number or description" value="{{ search }}">
-    </div>
-    <div class="dropdown col-md-2">
-      <button class="btn btn-secondary dropdown-toggle"
-              type="button"
-              id="dropdownMenuButton"
-              data-bs-toggle="dropdown"
-              aria-expanded="false">
-        {% if customer %}
-          {{ customer }}
-        {% else %}
-          All Suppliers
-        {% endif %}
-    </button>
-      <ul class="dropdown-menu">
-        <li>
-          <a class="dropdown-item"
-            href="{{ url_for('probe_inventory_list') }}">
-          </a>
-        </li>
-        {% for c in customers %}
-          <li>
-            <a class="dropdown-item"
-              href="{{ url_for(
-                    'probe_inventory_list',
-                    customer=c,
-                    search=search,
-                    low_stock='1' if low_stock else ''
-              ) }}">
-              {{ c }}
-            </a>
-          </li>
-        {% endfor %}
-      </ul>
-    </div>
-    <div class="col-md-2">
-      <div class="form-check mt-1">
-        <input class="form-check-input" type="checkbox" id="low_stock" name="low_stock" value="1" {% if low_stock %}checked{% endif %}>
-        <label class="form-check-label" for="low_stock">Show Low Stock</label>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <button class="btn btn-primary">Search</button>
-      <a class="btn btn-secondary" href="{{ url_for('probe_inventory_list') }}">Reset</a>
-    </div>
-  </form>
 
-  <p>{{ total }} item{{ '' if total == 1 else 's' }} found.</p>
+<style>
+  .part-btn {
+    background-color: white;
+    border-radius: 1.25rem;
+    border: 1px solid #d3d2d2;
+    width: 90%;
+  }
+  .part-btn:hover {
+    background-color: #e0e0e0;
+    border-color: #aaa;
+  }
+  .table td, .table th {
+    vertical-align: middle !important;
+  }
+  thead th {
+    padding-bottom: 1rem !important;
+    border-bottom: .5px solid black !important;
+  }
+    .table-striped tbody tr:nth-child(odd) {
+    background-color: #f2f2f2;
+  }
+    .table-striped tbody tr:nth-child(even) {
+    background-color: white;
+  }
+</style> 
+
+  <h1 style="color: #1f396e;">Probe Inventory</h1>
+  {{ search_form('probe_inventory_list', customers, search, customer, low_stock) }}
 
   <div class="table-responsive">
     <table class="table table-sm table-striped">
       <thead>
         <tr>
-          <th>Part Number</th>
-          <th>Description</th>
-          <th>Location</th>
-          <th>Qty</th>
-          <th>Min Qty</th>
-          <th>Supplier</th>
-          <th>Last Modified</th>
+          <th style="width: 300px;">Part Number</th>
+          <th style="width: 500px;">Description</th>
+          <th style="width: 140px;">Location</th>
+          <th style="text-align: center;">Qty</th>
+          <th style="text-align: center;">Supplier</th>
+          <th style="text-align: center;">Last Modified</th>
         </tr>
       </thead>
       <tbody>
         {% for item in items %}
           <tr>
-            <td><a href="{{ url_for('probe_item_detail', item_id=item.id) }}">{{ item.part_number }}</a></td>
+            <td><a 
+              class="btn ms-2 part-btn" href="{{ url_for('probe_item_detail', item_id=item.id) }}"
+              >{{ item.part_number }}
+            </a></td>
             <td>{{ item.description or '' }}</td>
             <td>{{ item.location or '' }}</td>
-            <td>{{ item.quantity }}</td>
-            <td>{{ item.min_quantity }}</td>
-            <td>{{ item.customer or '' }}</td>
-            <td>{{ item.last_modify_date }}</td>
+            <td style="text-align: center;">{{ item.quantity }}</td>
+            <td style="text-align: center;">{{ item.customer or '' }}</td>
+            <td style="text-align: center;">{{ item.last_modify_date }}</td>
           </tr>
         {% endfor %}
       </tbody>

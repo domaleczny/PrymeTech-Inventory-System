@@ -1,0 +1,90 @@
+{# _inventory_macros.html #}
+{% macro search_form(list_route, customers, search, customer, low_stock) %}
+
+<style>
+  .supplier-btn {
+    background-color: white;
+    border: 1px solid #d3d2d2;
+  }
+  .export-add-btn {
+    background-color: #1f396e;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
+    color: rgb(255, 252, 252);
+  }
+  .export-add-btn:hover {
+    background-color: #122241;
+    color: rgba(255, 252, 252, 0.664);
+    border-color: #aaa;
+  }
+</style>
+
+<form class="row g-3 mb-3" method="get">
+  <div class="col-md-4">
+    <div class="input-group">
+        <span class="input-group-text">
+        <i class="bi bi-search"></i>
+        </span>
+        <input type="text" name="search" class="form-control"
+            placeholder="Enter part number or description"
+            value="{{ search }}">
+    </div>
+    </div>
+
+  <div class="dropdown col-auto">
+    <button class="btn supplier-btn dropdown-toggle"
+            type="button"
+            id="dropdownMenuButton"
+            data-bs-toggle="dropdown"
+            aria-expanded="false">
+      {{ customer if customer else 'All Suppliers' }}
+    </button>
+    <ul class="dropdown-menu">
+      <li>
+        <a class="dropdown-item" href="{{ url_for(list_route) }}"></a>
+      </li>
+      {% for c in customers %}
+        <li>
+          <a class="dropdown-item"
+             href="{{ url_for(list_route, customer=c, search=search, low_stock='1' if low_stock else '') }}">
+            {{ c }}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="col-auto">
+    <div class="form-check mt-1">
+      <input class="form-check-input" type="checkbox"
+             id="low_stock" name="low_stock" value="1"
+             {% if low_stock %}checked{% endif %}
+             onchange="this.form.submit()">
+      <label class="form-check-label" for="low_stock">Show Low Stock</label>
+    </div>
+  </div>
+
+  <div class="col-auto ms-auto">
+    <a 
+        class="btn export-add-btn "
+        href="{{ url_for('export_page') }}?format=csv"
+        >
+        <i class="bi bi-download"></i>          
+        Export
+    </a>
+    <a 
+        class="btn export-add-btn ms-3"
+        href="{{ url_for('export_page') }}?format=csv"
+        >
+        <i class="bi bi-plus-lg"></i>         
+        Add item
+    </a>
+  </div>
+
+  <div>
+    <a class="btn btn-outline-secondary" style="border-radius: 1.25rem;"
+       href="{{ url_for(list_route) }}">
+       <i class="bi bi-x-lg"></i>
+       Clear Search</a>
+  </div>
+</form>
+{% endmacro %}
