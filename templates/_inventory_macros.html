@@ -1,5 +1,5 @@
 {# _inventory_macros.html #}
-{% macro search_form(list_route, customers, search, customer, low_stock) %}
+{% macro search_form(list_route, customers, search, customer, low_stock, add_modal_id) %}
 
 <style>
   .supplier-btn {
@@ -71,13 +71,15 @@
         <i class="bi bi-download"></i>          
         Export
     </a>
-    <a 
+    <button
         class="btn export-add-btn ms-3"
-        href="{{ url_for('export_page') }}?format=csv"
+        type="button"
+        data-bs-toggle="modal"
+        data-bs-target="#{{ add_modal_id }}"
         >
         <i class="bi bi-plus-lg"></i>         
         Add item
-    </a>
+    </button>
   </div>
 
   <div>

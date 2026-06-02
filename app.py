@@ -1,4 +1,5 @@
 import os
+import sqlite3
 import tempfile
 from flask import Flask, after_this_request, render_template, request, redirect, url_for, flash, send_file, jsonify
 from werkzeug.utils import secure_filename
@@ -20,6 +21,13 @@ def get_conn():
 
 def serialize_row(row):
     return {key: row[key] for key in row.keys()}
+
+
+def parse_form_int(field_name, default=0):
+    value = request.form.get(field_name)
+    if value in (None, ""):
+        return default
+    return int(value)
 
 
 @app.route("/")
@@ -114,6 +122,117 @@ def probe_inventory_list():
         search=search or "",
     )
 
+
+@app.route("/inventory/add", methods=["POST"])
+def add_inventory_item():
+    part_number = request.form.get("part_number", "").strip()
+    if not part_number:
+        flash("Part number is required.", "error")
+        return redirect(url_for("inventory_list"))
+
+    try:
+        quantity = parse_form_int("quantity")
+        min_quantity = parse_form_int("min_quantity")
+    except ValueError:
+        flash("Quantity and min quantity must be whole numbers.", "error")
+        return redirect(url_for("inventory_list"))
+
+    now = import_inventory.now_date()
+    conn = get_conn()
+    try:
+        cursor = conn.execute(
+            """INSERT INTO inventory (
+                part_number, description, location, quantity,
+                min_quantity, customer, last_modify_date
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (
+                part_number,
+                request.form.get("description") or None,
+                request.form.get("location") or None,
+                quantity,
+                min_quantity,
+                request.form.get("customer") or None,
+                now,
+            ),
+        )
+    except sqlite3.IntegrityError:
+        flash("An item with that part number already exists.", "error")
+        return redirect(url_for("inventory_list"))
+
+    import_inventory.record_change(conn, part_number, "create", {
+        "part_number": {"old": None, "new": part_number},
+        "description": {"old": None, "new": request.form.get("description") or None},
+        "location": {"old": None, "new": request.form.get("location") or None},
+        "quantity": {"old": None, "new": quantity},
+        "min_quantity": {"old": None, "new": min_quantity},
+        "customer": {"old": None, "new": request.form.get("customer") or None},
+    }, changed_by="web")
+    flash("Item added successfully.", "success")
+    return redirect(url_for("item_detail", item_id=cursor.lastrowid))
+
+
+@app.route("/probe-inventory/add", methods=["POST"])
+def add_probe_inventory_item():
+    part_number = request.form.get("part_number", "").strip()
+    if not part_number:
+        flash("Part number is required.", "error")
+        return redirect(url_for("probe_inventory_list"))
+
+    try:
+        quantity = parse_form_int("quantity")
+        min_quantity = parse_form_int("min_quantity")
+    except ValueError:
+        flash("Quantity and min quantity must be whole numbers.", "error")
+        return redirect(url_for("probe_inventory_list"))
+
+    now = import_inventory.now_date()
+    fields = {
+        "part_number": part_number,
+        "description": request.form.get("description") or None,
+        "location": request.form.get("location") or None,
+        "quantity": quantity,
+        "min_quantity": min_quantity,
+        "customer": request.form.get("customer") or None,
+        "thread_size": request.form.get("thread_size") or None,
+        "sphere_dk": request.form.get("sphere_dk") or None,
+        "length": request.form.get("length") or None,
+        "ml_ewl": request.form.get("ml_ewl") or None,
+        "tip_material": request.form.get("tip_material") or None,
+        "shaft_material": request.form.get("shaft_material") or None,
+        "probe_type": request.form.get("probe_type") or None,
+        "link": request.form.get("link") or None,
+    }
+
+    conn = get_conn()
+    try:
+        cursor = conn.execute(
+            """INSERT INTO probe_inventory (
+                part_number, description, location, quantity, min_quantity, customer,
+                last_modify_date, thread_size, sphere_dk, length, ml_ewl,
+                tip_material, shaft_material, probe_type, link
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                fields["part_number"], fields["description"], fields["location"],
+                fields["quantity"], fields["min_quantity"], fields["customer"], now,
+                fields["thread_size"], fields["sphere_dk"], fields["length"],
+                fields["ml_ewl"], fields["tip_material"], fields["shaft_material"],
+                fields["probe_type"], fields["link"],
+            ),
+        )
+    except sqlite3.IntegrityError:
+        flash("An item with that part number already exists.", "error")
+        return redirect(url_for("probe_inventory_list"))
+
+    import_inventory.record_change(
+        conn,
+        part_number,
+        "create",
+        {field: {"old": None, "new": value} for field, value in fields.items()},
+        changed_by="web",
+    )
+    flash("Probe item added successfully.", "success")
+    return redirect(url_for("probe_item_detail", item_id=cursor.lastrowid))
+
 @app.route("/probe-inventory/<int:item_id>", methods=["GET", "POST"])
 def probe_item_detail(item_id):
     conn = get_conn()
@@ -188,6 +307,34 @@ def dashboard():
     )
 
 
+@app.route("/<int:item_id>/remove", methods=["GET", "POST"])
+def remove_inventory_item(item_id):
+    conn = get_conn()
+    row = conn.execute("SELECT part_number FROM inventory WHERE id = ?", (item_id,)).fetchone()
+    if row is None:
+        flash("Item not found.", "error")
+        return redirect(url_for("inventory_list"))
+
+    conn.execute("DELETE FROM inventory WHERE id = ?", (item_id,))
+    import_inventory.record_change(conn, row["part_number"], "delete", {}, changed_by="web")
+    flash("Item removed successfully.", "success")
+    return redirect(url_for("inventory_list"))
+
+
+@app.route("/probe-inventory/<int:item_id>/remove", methods=["GET", "POST"])
+def remove_probe_inventory_item(item_id):
+    conn = get_conn()
+    row = conn.execute("SELECT part_number FROM probe_inventory WHERE id = ?", (item_id,)).fetchone()
+    if row is None:
+        flash("Item not found.", "error")
+        return redirect(url_for("probe_inventory_list"))
+
+    conn.execute("DELETE FROM probe_inventory WHERE id = ?", (item_id,))
+    import_inventory.record_change(conn, row["part_number"], "delete", {}, changed_by="web")
+    flash("Probe item removed successfully.", "success")
+    return redirect(url_for("probe_inventory_list"))
+
+
 @app.route("/<int:item_id>", methods=["GET", "POST"])
 def item_detail(item_id):
     conn = get_conn()
@@ -259,7 +406,7 @@ def import_page():
             )
         except Exception as exc:
             flash(f"Import failed: {exc}", "error")
-        return redirect(url_for("import_export_page"))
+        return redirect(url_for("import_page"))
 
     return render_template("import.html")
 

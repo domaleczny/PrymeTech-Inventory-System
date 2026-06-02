@@ -29,7 +29,7 @@
 </style> 
 
   <h1 style="color: #1f396e;">Probe Inventory</h1>
-  {{ search_form('probe_inventory_list', customers, search, customer, low_stock) }}
+  {{ search_form('probe_inventory_list', customers, search, customer, low_stock, 'addProbeInventoryItemModal') }}
 
   <div class="table-responsive">
     <table class="table table-sm table-striped">
@@ -63,11 +63,96 @@
 
   <nav aria-label="Page navigation">
     <ul class="pagination">
+      <li class="page-item {% if page == 1 %}disabled{% endif %}">
+        <a class="page-link" href="?page={{ page - 1 }}&search={{ search }}&location={{ location }}&customer={{ customer }}&low_stock={{ '1' if low_stock else '' }}" aria-label="Previous">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
       {% for p in range(1, pages + 1) %}
         <li class="page-item {% if p == page %}active{% endif %}">
           <a class="page-link" href="?page={{ p }}&search={{ search }}&location={{ location }}&customer={{ customer }}&low_stock={{ '1' if low_stock else '' }}">{{ p }}</a>
         </li>
       {% endfor %}
+      <li class="page-item {% if page == pages %}disabled{% endif %}">
+        <a class="page-link" href="?page={{ page + 1 }}&search={{ search }}&location={{ location }}&customer={{ customer }}&low_stock={{ '1' if low_stock else '' }}" aria-label="Next">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
     </ul>
   </nav>
+
+  <div class="modal fade" id="addProbeInventoryItemModal" tabindex="-1" aria-labelledby="addProbeInventoryItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <form class="modal-content" method="post" action="{{ url_for('add_probe_inventory_item') }}">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addProbeInventoryItemModalLabel">Add Probe Inventory Item</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="probe_part_number">Part Number</label>
+              <input class="form-control" id="probe_part_number" name="part_number" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="probe_customer">Supplier</label>
+              <input class="form-control" id="probe_customer" name="customer">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="probe_location">Location</label>
+              <input class="form-control" id="probe_location" name="location">
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="probe_description">Description</label>
+              <input class="form-control" id="probe_description" name="description">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="probe_quantity">Quantity</label>
+              <input class="form-control" id="probe_quantity" name="quantity" type="number" step="1" value="0" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="probe_min_quantity">Min Quantity</label>
+              <input class="form-control" id="probe_min_quantity" name="min_quantity" type="number" step="1" value="0" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="probe_thread_size">Thread Size</label>
+              <input class="form-control" id="probe_thread_size" name="thread_size">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="probe_sphere_dk">Sphere DK</label>
+              <input class="form-control" id="probe_sphere_dk" name="sphere_dk">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="probe_length">Length</label>
+              <input class="form-control" id="probe_length" name="length">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="probe_ml_ewl">ML / EWL</label>
+              <input class="form-control" id="probe_ml_ewl" name="ml_ewl">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="probe_tip_material">Tip Material</label>
+              <input class="form-control" id="probe_tip_material" name="tip_material">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" for="probe_shaft_material">Shaft Material</label>
+              <input class="form-control" id="probe_shaft_material" name="shaft_material">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="probe_type">Probe Type</label>
+              <input class="form-control" id="probe_type" name="probe_type">
+            </div>
+            <div class="col-md-8">
+              <label class="form-label" for="probe_link">Link</label>
+              <input class="form-control" id="probe_link" name="link" type="url">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" type="submit">Add Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
 {% endblock %}

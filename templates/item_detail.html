@@ -28,12 +28,24 @@
         <input class="form-control" name="customer" value="{{ item.customer or '' }}">
       </div>
     </div>
-    <div class="mb-3">
+  
+
+    <div class="mb-3 mt-4">
       <label class="form-label">Last Modified</label>
       <input class="form-control" value="{{ item.last_modify_date }}" disabled>
     </div>
-    <input type="hidden" name="last_modify_date" value="{{ item.last_modify_date }}">
-    <button class="btn btn-primary" type="submit">Save Changes</button>
-    <a class="btn btn-secondary" href="{{ url_for('inventory_list') }}">Back</a>
+      <input type="hidden" name="last_modify_date" value="{{ item.last_modify_date }}">
+      <div class="mb-4 mt-4" style="display: flex; gap: 1rem;">
+      <button class="btn" style="background-color: #1f396e; color: white;" type="submit">Save Changes</button>
+      <a class="btn btn-secondary" href="{{ url_for('inventory_list') }}"><i class="bi bi-arrow-return-left"></i></a>
+      <a 
+        class="btn btn-danger"
+        style="margin-left: auto;" 
+        href="{{ url_for('remove_inventory_item', item_id=item.id) }}"
+        onclick="return confirm('Are you sure you want to remove this item from inventory?');">
+        <i class="bi bi-trash"></i> Remove
+      </a>
+    </div>
   </form>
+
 {% endblock %}
