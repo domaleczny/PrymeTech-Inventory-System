@@ -1,9 +1,9 @@
 {% extends 'layout.html' %}
 {% block content %}
-  <h1>Dashboard</h1>
+  <h1 style="color: #1f396e;">Dashboard</h1>
   <div class="row mb-4">
     <div class="col-md-6">
-      <div class="card text-bg-primary mb-3">
+      <div class="card mb-3">
         <div class="card-body">
           <h5 class="card-title">Total inventory items</h5>
           <p class="card-text display-6">{{ total_items }}</p>
@@ -11,7 +11,7 @@
       </div>
     </div>
     <div class="col-md-6">
-      <div class="card text-bg-warning mb-3">
+      <div class="card text-danger border-danger mb-3">
         <div class="card-body">
           <h5 class="card-title">Low stock items</h5>
           <p class="card-text display-6">{{ low_stock_count }}</p>
@@ -20,12 +20,18 @@
     </div>
   </div>
 
-  <h2>Low stock preview</h2>
+  <h2>Low Stock Preview</h2>
   {% if low_stock_items %}
     <div class="table-responsive">
       <table class="table table-sm table-striped">
         <thead>
-          <tr><th>Part</th><th>Qty</th><th>Min</th><th>Location</th></tr>
+          <tr>
+            <th>Part Number</th>
+            <th>Qty</th>
+            <th>Min</th>
+            <th>Location</th>
+            <th>Last Modified</th>
+          </tr>
         </thead>
         <tbody>
           {% for item in low_stock_items %}
@@ -34,6 +40,7 @@
               <td>{{ item.quantity }}</td>
               <td>{{ item.min_quantity }}</td>
               <td>{{ item.location or '-' }}</td>
+              <td>{{ item.last_modify_date }}</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -41,5 +48,54 @@
     </div>
   {% else %}
     <p>No low stock items at the moment.</p>
+  {% endif %}
+
+  <h2 class="mt-4">Recent Activity</h2>
+  {% if recent_changes %}
+    <div class="table-responsive">
+      <table class="table table-sm table-striped">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Part Number</th>
+            <th>Action</th>
+            <th>Changes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for change in recent_changes %}
+            <tr>
+              <td class="text-nowrap">{{ change.timestamp }}</td>
+              <td>{{ change.part_number }}</td>
+              <td>
+                {% if change.action == 'create' %}
+                  <span class="badge bg-success">Created</span>
+                {% elif change.action == 'update' %}
+                  <span class="badge bg-primary">Updated</span>
+                {% elif change.action == 'delete' %}
+                  <span class="badge bg-danger">Deleted</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if change.diff %}
+                  {% for field, values in change.diff.items() %}
+                    <div>
+                      <strong>{{ field }}:</strong>
+                      <span class="text-muted">{{ values.old or '—' }}</span>
+                      →
+                      <span>{{ values.new or '—' }}</span>
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>No recent activity.</p>
   {% endif %}
 {% endblock %}

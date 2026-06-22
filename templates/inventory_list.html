@@ -49,7 +49,11 @@
             <td><a class="btn ms-2 part-btn" href="{{ url_for('item_detail', item_id=item.id) }}">{{ item.part_number }}</a></td>
             <td>{{ item.description or '' }}</td>
             <td>{{ item.location or '' }}</td>
-            <td style="text-align: center;">{{ item.quantity }}</td>
+            {% if item.quantity <= item.min_quantity and item.min_quantity > 0 %}
+              <td style="text-align: center; color: red; font-weight: 700;">{{ item.quantity }}</td>
+            {% else %}
+              <td style="text-align: center;">{{ item.quantity }}</td>
+            {% endif %}
             <td style="text-align: center;">{{ item.customer or '' }}</td>
             <td style="text-align: center;">{{ item.last_modify_date }}</td>
           </tr>
@@ -57,7 +61,7 @@
       </tbody>
     </table>
   </div>
-
+  <div class="d-flex justify-content-center">
   <nav aria-label="Page navigation">
     <ul class="pagination">
       <li class="page-item {% if page == 1 %}disabled{% endif %}">
@@ -77,6 +81,7 @@
         </li>
     </ul>
   </nav>
+  </div>
 
   <div class="modal fade" id="addInventoryItemModal" tabindex="-1" aria-labelledby="addInventoryItemModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">

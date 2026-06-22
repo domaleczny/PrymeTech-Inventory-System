@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import tempfile
-from flask import Flask, after_this_request, render_template, request, redirect, url_for, flash, send_file, jsonify
+from flask import Flask, after_this_request, json, render_template, request, redirect, url_for, flash, send_file, jsonify
 from werkzeug.utils import secure_filename
 
 import import_inventory
@@ -299,13 +299,60 @@ def dashboard():
     conn = get_conn()
     low_stock_items = import_inventory.inventory_query(conn, low_stock=True)
     total_items = conn.execute("SELECT COUNT(*) FROM inventory").fetchone()[0]
+
+    recent_changes = []
+    for row in conn.execute("SELECT * FROM changes ORDER BY timestamp DESC LIMIT 20").fetchall():
+        change = serialize_row(row)
+        try:
+            change["diff"] = json.loads(change["diff"])
+        except (ValueError, TypeError):
+            change["diff"] = {}
+        recent_changes.append(change)
+
+    low_stock_items_sorted = sorted(
+        [serialize_row(row) for row in low_stock_items[:10]],
+        key=lambda item: (item["quantity"] / item["min_quantity"])
+        if item["min_quantity"] else float("inf")
+    )
+
     return render_template(
         "dashboard.html",
         total_items=total_items,
         low_stock_count=len(low_stock_items),
-        low_stock_items=[serialize_row(row) for row in low_stock_items[:10]],
+        low_stock_items=low_stock_items_sorted,
+        recent_changes=recent_changes,
     )
 
+@app.route("/api/locations", methods=["GET"])
+def api_locations_list():
+    conn = get_conn()
+    rows = conn.execute("SELECT * FROM inventory_locations ORDER BY id").fetchall()
+    return jsonify([serialize_row(row) for row in rows])
+
+
+@app.route("/api/locations/<int:location_id>", methods=["PUT"])
+def api_location_update(location_id):
+    data = request.get_json(force=True)
+    allowed = {"location_code", "description", "last_updated"}
+    update_values = {key: data[key] for key in allowed if key in data}
+    if not update_values:
+        return jsonify({"error": "No valid fields provided"}), 400
+
+    conn = get_conn()
+    row = conn.execute("SELECT * FROM inventory_locations WHERE id = ?", (location_id,)).fetchone()
+    if row is None:
+        return jsonify({"error": "Not found"}), 404
+
+    conn.execute(
+        "UPDATE inventory_locations SET location_code = ?, description = ?, last_updated = ? WHERE id = ?",
+        (
+            update_values.get("location_code", row["location_code"]),
+            update_values.get("description", row["description"]),
+            update_values.get("last_updated", row["last_updated"]),
+            location_id,
+        ),
+    )
+    return jsonify({"updated": True})
 
 @app.route("/<int:item_id>/remove", methods=["GET", "POST"])
 def remove_inventory_item(item_id):

@@ -36,7 +36,7 @@
             id="dropdownMenuButton"
             data-bs-toggle="dropdown"
             aria-expanded="false">
-      {{ customer if customer else 'All Suppliers' }}
+      {{ customer if customer else 'Suppliers' }}
     </button>
     <ul class="dropdown-menu">
       <li>
@@ -56,6 +56,7 @@
   <div class="col-auto">
     <div class="form-check mt-1">
       <input class="form-check-input" type="checkbox"
+             style="accent-color: red;"
              id="low_stock" name="low_stock" value="1"
              {% if low_stock %}checked{% endif %}
              onchange="this.form.submit()">
@@ -63,30 +64,126 @@
     </div>
   </div>
 
-  <div class="col-auto ms-auto">
-    <a 
-        class="btn export-add-btn "
-        href="{{ url_for('export_page') }}?format=csv"
-        >
-        <i class="bi bi-download"></i>          
-        Export
-    </a>
+  <div class="col-auto ms-auto d-flex align-items-center gap-2">
     <button
-        class="btn export-add-btn ms-3"
-        type="button"
-        data-bs-toggle="modal"
-        data-bs-target="#{{ add_modal_id }}"
-        >
-        <i class="bi bi-plus-lg"></i>         
-        Add item
+      class="btn export-add-btn"
+      type="button"
+      data-bs-toggle="modal"
+      data-bs-target="#{{ add_modal_id }}">
+      <i class="bi bi-plus-lg"></i>
+      Add Item
     </button>
-  </div>
 
+    <div class="dropdown">
+      <button class="btn export-add-btn"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              title="More options">
+        <i class="bi bi-three-dots-vertical"></i>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li>
+          <a class="dropdown-item" href="{{ url_for('import_page') }}">
+            <i class="bi bi-file-earmark-arrow-up me-2"></i>Import Excel
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('export_page') }}?format=csv">
+            <i class="bi bi-download me-2"></i>Export
+          </a>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <a class="dropdown-item" href="#"
+             data-bs-toggle="modal"
+             data-bs-target="#inventorylocationsModal">
+            <i class="bi bi-geo-alt me-2"></i>Location Definitions
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+{% if search or customer or low_stock %}
   <div>
     <a class="btn btn-outline-secondary" style="border-radius: 1.25rem;"
        href="{{ url_for(list_route) }}">
        <i class="bi bi-x-lg"></i>
        Clear Search</a>
   </div>
+  {% endif %}
 </form>
+
+
+<div class="modal fade" id="inventorylocationsModal" tabindex="-1" aria-labelledby="inventorylocationsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="inventorylocationsModalLabel">Inventory Locations</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-sm table-striped" id="locations-table">
+            <thead>
+              <tr>
+                <th>Location Code</th>
+                <th>Description</th>
+                <th>Last Updated</th>
+              </tr>
+            </thead>
+            <tbody id="locations-tbody">
+              <tr><td colspan="3" class="text-muted">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const tbody = document.getElementById('locations-tbody');
+  let debounceTimers = {};
+
+  function loadLocations() {
+    fetch('/api/locations')
+      .then(res => res.json())
+      .then(locations => {
+        tbody.innerHTML = locations.map(loc => `
+          <tr>
+            <td contenteditable="true" data-id="${loc.id}" data-field="location_code">${loc.location_code || ''}</td>
+            <td contenteditable="true" data-id="${loc.id}" data-field="description">${loc.description || ''}</td>
+            <td contenteditable="true" data-id="${loc.id}" data-field="last_updated">${loc.last_updated || ''}</td>
+          </tr>
+        `).join('');
+
+        tbody.querySelectorAll('td[contenteditable]').forEach(td => {
+          td.addEventListener('input', () => {
+            const id = td.dataset.id;
+            clearTimeout(debounceTimers[id]);
+            debounceTimers[id] = setTimeout(() => {
+              const row = td.closest('tr');
+              const cells = row.querySelectorAll('td[contenteditable]');
+              const payload = {};
+              cells.forEach(cell => {
+                payload[cell.dataset.field] = cell.innerText.trim();
+              });
+              fetch(`/api/locations/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+              });
+            }, 500);
+          });
+        });
+      });
+  }
+
+  // load when modal opens
+  document.getElementById('inventorylocationsModal').addEventListener('show.bs.modal', loadLocations);
+</script>
 {% endmacro %}
