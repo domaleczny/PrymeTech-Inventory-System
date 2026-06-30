@@ -35,9 +35,9 @@ def inventory_list():
     page = int(request.args.get("page", 1))
     per_page = 25
     low_stock = request.args.get("low_stock") == "1"
-    location = request.args.get("location")
-    customer = request.args.get("customer")
-    search = request.args.get("search")
+    location = request.args.get("location", "").strip()
+    search = request.args.get("search", "").strip()
+    customer = request.args.get("customer", "").strip()
 
     conn = get_conn()
     rows = import_inventory.inventory_query(
@@ -652,4 +652,4 @@ def api_probe_inventory_item(item_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run()
