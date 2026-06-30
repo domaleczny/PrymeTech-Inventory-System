@@ -369,10 +369,10 @@ def inventory_query(conn, low_stock=False, location=None, customer=None, search=
     params = []
 
     if low_stock:
-        clauses.append("quantity < min_quantity")
+        clauses.append("quantity <= min_quantity AND min_quantity > 0")
     if location:
         clauses.append("location LIKE ?")
-        params.append(f"%{location}%")
+        params.append(f"%{location.strip()}%")
     if customer:
         clauses.append("LOWER(customer) LIKE LOWER(?)")
         params.append(f"%{customer.strip()}%")
@@ -396,10 +396,10 @@ def probe_inventory_query(conn, low_stock=False, location=None, customer=None, s
     params = []
 
     if low_stock:
-        clauses.append("quantity < min_quantity")
+        clauses.append("quantity <= min_quantity AND min_quantity > 0")
     if location:
         clauses.append("location LIKE ?")
-        params.append(f"%{location}%")
+        params.append(f"%{location.strip()}%")
     if customer:
         clauses.append("LOWER(customer) LIKE LOWER(?)")
         params.append(f"%{customer.strip()}%")
@@ -431,7 +431,16 @@ if __name__ == "__main__":
     parser.add_argument("--db", default=DB_PATH, help="SQLite database path")
     args = parser.parse_args()
     summary = import_excel(args.file, db_path=args.db)
-    logging.info("Import completed: inserted=%d updated=%d skipped=%d invalid=%d",
-                 summary["inserted"], summary["updated"], summary["skipped"], len(summary["invalid_rows"]))
+
+    logging.info(
+        "Import completed: inventory_inserted=%d inventory_updated=%d inventory_skipped=%d probe_inserted=%d probe_updated=%d probe_skipped=%d invalid=%d",
+        summary["inventory_inserted"],
+        summary["inventory_updated"],
+        summary["inventory_skipped"],
+        summary["probe_inserted"],
+        summary["probe_updated"],
+        summary["probe_skipped"],
+        len(summary["invalid_rows"]),
+    )
     if summary["invalid_rows"]:
         logging.warning("Invalid rows: %s", summary["invalid_rows"])

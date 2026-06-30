@@ -1,5 +1,5 @@
 {# _inventory_macros.html #}
-{% macro search_form(list_route, customers, search, customer, low_stock, add_modal_id) %}
+{% macro search_form(list_route, customers, search, customer, low_stock, location, add_modal_id) %}
 
 <style>
   .supplier-btn {
@@ -28,7 +28,17 @@
             placeholder="Enter part number or description"
             value="{{ search }}">
     </div>
+  </div>
+  <div class="col-md-2">
+    <div class="input-group">
+        <span class="input-group-text">
+        <i class="bi bi-geo-alt"></i>
+        </span>
+        <input type="text" name="location" class="form-control"
+            placeholder="Enter location"
+            value="{{ location }}">
     </div>
+  </div>
 
   <div class="dropdown col-auto">
     <button class="btn supplier-btn dropdown-toggle"
@@ -45,7 +55,7 @@
       {% for c in customers %}
         <li>
           <a class="dropdown-item"
-             href="{{ url_for(list_route, customer=c, search=search, low_stock='1' if low_stock else '') }}">
+             href="{{ url_for(list_route, customer=c, search=search, location=location, low_stock='1' if low_stock else '') }}">
             {{ c }}
           </a>
         </li>
@@ -104,7 +114,8 @@
       </ul>
     </div>
   </div>
-{% if search or customer or low_stock %}
+  <button type="submit" hidden></button>
+{% if search or customer or location or low_stock %}
   <div>
     <a class="btn btn-outline-secondary" style="border-radius: 1.25rem;"
        href="{{ url_for(list_route) }}">

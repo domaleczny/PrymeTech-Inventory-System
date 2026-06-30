@@ -447,41 +447,24 @@ def import_page():
 
         try:
             summary = import_inventory.import_excel(temp_path, db_path=DB_PATH, changed_by="web")
+
+            print("=== IMPORT SUMMARY ===")
+            print(summary)
+
+            print("=== INVALID ROWS ===")
+            for row in summary["invalid_rows"]:
+                print(row)
+
             flash(
-                f"Import completed: inserted={summary['inserted']} updated={summary['updated']} skipped={summary['skipped']} invalid={len(summary['invalid_rows'])}",
-                "success",
+                f"Import completed! Invalid rows: {len(summary['invalid_rows'])}",
+                "success"
             )
+
         except Exception as exc:
             flash(f"Import failed: {exc}", "error")
         return redirect(url_for("import_page"))
 
     return render_template("import.html")
-
-
-@app.route("/probe-import", methods=["GET", "POST"])
-def probe_import_page():
-    if request.method == "POST":
-        uploaded_file = request.files.get("file")
-        if uploaded_file is None or uploaded_file.filename == "":
-            flash("Please select an Excel file to upload.", "error")
-            return redirect(url_for("probe_import_page"))
-
-        filename = secure_filename(uploaded_file.filename)
-        temp_dir = tempfile.mkdtemp()
-        temp_path = os.path.join(temp_dir, filename)
-        uploaded_file.save(temp_path)
-
-        try:
-            summary = import_inventory.import_probe_excel(temp_path, db_path=DB_PATH, changed_by="web")
-            flash(
-                f"Import completed: inserted={summary['inserted']} updated={summary['updated']} skipped={summary['skipped']} invalid={len(summary['invalid_rows'])}",
-                "success",
-            )
-        except Exception as exc:
-            flash(f"Import failed: {exc}", "error")
-        return redirect(url_for("probe_import_page"))
-
-    return render_template("probe_import.html")
 
 
 @app.route("/export")
