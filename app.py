@@ -691,4 +691,5 @@ def api_probe_inventory_item(item_id):
 
 
 if __name__ == "__main__":
+    print("Working directory:", os.getcwd())
     app.run(host="0.0.0.0", port=5000, debug=True)
