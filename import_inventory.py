@@ -136,6 +136,11 @@ def ensure_schema(conn):
     with open(SCHEMA_FILE, "r", encoding="utf-8") as fp:
         conn.executescript(fp.read())
 
+    cols = [row[1] for row in conn.execute("PRAGMA table_info(inventory)").fetchall()]
+
+    if "image_path" not in cols:
+        conn.execute("ALTER TABLE inventory ADD COLUMN image_path TEXT")
+
 
 def record_change(conn, part_number, action, diff, changed_by="system"):
     timestamp = now_date()

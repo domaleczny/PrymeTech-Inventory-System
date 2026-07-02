@@ -1,7 +1,7 @@
 {% extends 'layout.html' %}
 {% block content %}
   <h1>Item detail</h1>
-  <form method="post">
+  <form method="post" enctype="multipart/form-data">
     <div class="mb-3">
       <label class="form-label">Part Number</label>
       <input class="form-control" value="{{ item.part_number }}" disabled>
@@ -27,6 +27,18 @@
         <label class="form-label">Customer</label>
         <input class="form-control" name="customer" value="{{ item.customer or '' }}">
       </div>
+    </div>
+
+    {% if item.image_path %}
+      <div class="mb-3">
+        <img src="{{ url_for('static', filename='uploads/' ~ item.image_path) }}"
+            class="img-fluid"
+            style="max-height: 300px;">
+      </div>
+    {% endif %}
+    <div class="mb-3">
+      <label class="form-label">Image</label>
+      <input class="form-control" type="file" name="image" accept="image/*">
     </div>
   
 

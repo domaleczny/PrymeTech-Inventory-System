@@ -11,6 +11,11 @@ app = Flask(
     static_folder="images",
     static_url_path="/static/images",
 )
+
+UPLOAD_FOLDER = os.path.join(app.root_path, "images", "uploads")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "inventory-secret-key")
 DB_PATH = os.environ.get("INVENTORY_DB", import_inventory.DB_PATH)
 
@@ -243,6 +248,9 @@ def probe_item_detail(item_id):
 
     item = serialize_row(row)
     if request.method == "POST":
+        file = request.files.get("image")
+        image_path = save_image(file, item_id) or item.get("image_path")
+
         original_timestamp = request.form.get("last_modify_date")
         if original_timestamp != item["last_modify_date"]:
             flash("This item was modified by another process. Reload to continue.", "warning")
@@ -268,22 +276,36 @@ def probe_item_detail(item_id):
             if item[field] != value:
                 changed[field] = {"old": item[field], "new": value}
 
-        if changed:
-            now = import_inventory.now_date()
+        if changed or file:
+            if file:
+                now = original_timestamp
+            elif changed:
+                now = import_inventory.now_date()
+            
             conn.execute(
                 """UPDATE probe_inventory SET
                     description = ?, location = ?, quantity = ?, min_quantity = ?, customer = ?,
                     thread_size = ?, sphere_dk = ?, length = ?, ml_ewl = ?,
-                    tip_material = ?, shaft_material = ?, probe_type = ?, link = ?,
+                    tip_material = ?, shaft_material = ?, probe_type = ?, link = ?, image_path = ?,
                     last_modify_date = ?
                 WHERE id = ?""",
                 (
-                    updated["description"], updated["location"],
-                    updated["quantity"], updated["min_quantity"], updated["customer"],
-                    updated["thread_size"], updated["sphere_dk"], updated["length"],
-                    updated["ml_ewl"], updated["tip_material"], updated["shaft_material"],
-                    updated["probe_type"], updated["link"],
-                    now, item_id,
+                    updated["description"],
+                    updated["location"],
+                    updated["quantity"],
+                    updated["min_quantity"],
+                    updated["customer"],
+                    updated["thread_size"],
+                    updated["sphere_dk"],
+                    updated["length"],
+                    updated["ml_ewl"],
+                    updated["tip_material"],
+                    updated["shaft_material"],
+                    updated["probe_type"],
+                    updated["link"],
+                    image_path,
+                    now,
+                    item_id,
                 ),
             )
             import_inventory.record_change(conn, item["part_number"], "update", changed, changed_by="web")
@@ -293,6 +315,15 @@ def probe_item_detail(item_id):
         flash("No changes were detected.", "info")
 
     return render_template("probe_item_detail.html", item=item)
+
+def save_image(file, item_id):
+    if file and file.filename:
+        filename = secure_filename(file.filename)
+        filename = f"{item_id}_{filename}"
+        path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        file.save(path)
+        return filename
+    return None
 
 @app.route("/dashboard")
 def dashboard():
@@ -392,6 +423,9 @@ def item_detail(item_id):
 
     item = serialize_row(row)
     if request.method == "POST":
+        file = request.files.get("image")
+        image_path = save_image(file, item_id) or item.get("image_path")
+
         original_timestamp = request.form.get("last_modify_date")
         if original_timestamp != item["last_modify_date"]:
             flash("This item was modified by another process. Reload to continue.", "warning")
@@ -409,16 +443,21 @@ def item_detail(item_id):
             if item[field] != value:
                 changed[field] = {"old": item[field], "new": value}
 
-        if changed:
-            now = import_inventory.now_date()
+        if changed or file:
+            if file:
+                now = original_timestamp
+            elif changed:
+                now = import_inventory.now_date()
+
             conn.execute(
-                "UPDATE inventory SET description = ?, location = ?, quantity = ?, min_quantity = ?, customer = ?, last_modify_date = ? WHERE id = ?",
+                "UPDATE inventory SET description = ?, location = ?, quantity = ?, min_quantity = ?, customer = ?, image_path = ?, last_modify_date = ? WHERE id = ?",
                 (
                     updated["description"],
                     updated["location"],
                     updated["quantity"],
                     updated["min_quantity"],
                     updated["customer"],
+                    image_path,
                     now,
                     item_id,
                 ),
@@ -652,4 +691,4 @@ def api_probe_inventory_item(item_id):
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host="0.0.0.0", port=5000, debug=True)
