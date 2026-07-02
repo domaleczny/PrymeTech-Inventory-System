@@ -2,28 +2,47 @@ import os
 import sqlite3
 import pandas as pd
 from datetime import datetime
+from pathlib import Path
 
-DB_PATH = r"C:\InventoryApp\inventory.db" 
-EXPORT_DIR = r"C:\InventoryApp\exports"
+DB_PATH = r"C:\InventoryApp\inventory.db"
+EXPORT_DIR = r"C:\InventoryApp\backups"
+
+KEEP_LAST = 5
 
 os.makedirs(EXPORT_DIR, exist_ok=True)
 
-def export_table(conn, table_name, writer):
-    df = pd.read_sql_query(f"SELECT * FROM {table_name}", conn)
-    df.to_excel(writer, sheet_name=table_name, index=False)
-
-def main():
+def export_excel():
     conn = sqlite3.connect(DB_PATH)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    file_path = os.path.join(EXPORT_DIR, f"inventory_export_{timestamp}.xlsx")
+    file_path = os.path.join(EXPORT_DIR, f"inventory_backup_{timestamp}.xlsx")
 
     with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
-        export_table(conn, "inventory", writer)
-        export_table(conn, "probe_inventory", writer)
+        pd.read_sql_query("SELECT * FROM inventory", conn).to_excel(writer, sheet_name="inventory", index=False)
+        pd.read_sql_query("SELECT * FROM probe_inventory", conn).to_excel(writer, sheet_name="probe_inventory", index=False)
 
     conn.close()
-    print(f"Exported Excel file → {file_path}")
+    return file_path
+
+def cleanup_old_files():
+    files = sorted(
+        Path(EXPORT_DIR).glob("inventory_backup_*.xlsx"),
+        key=lambda p: p.stat().st_mtime
+    )
+
+    while len(files) > KEEP_LAST:
+        old_file = files.pop(0)
+        try:
+            old_file.unlink()
+            print(f"Deleted old backup: {old_file}")
+        except Exception as e:
+            print(f"Could not delete {old_file}: {e}")
+
+def main():
+    file_created = export_excel()
+    print(f"Created backup: {file_created}")
+
+    cleanup_old_files()
 
 if __name__ == "__main__":
     main()

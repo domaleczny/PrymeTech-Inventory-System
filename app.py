@@ -3,6 +3,7 @@ import sqlite3
 import tempfile
 from flask import Flask, after_this_request, json, render_template, request, redirect, url_for, flash, send_file, jsonify
 from werkzeug.utils import secure_filename
+from waitress import serve
 
 import import_inventory
 
@@ -691,5 +692,4 @@ def api_probe_inventory_item(item_id):
 
 
 if __name__ == "__main__":
-    print("Working directory:", os.getcwd())
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    serve(app, host="0.0.0.0", port=5000)
