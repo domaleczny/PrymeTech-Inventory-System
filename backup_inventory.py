@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 DB_PATH = r"C:\InventoryApp\inventory.db"
-EXPORT_DIR = r"C:\InventoryApp\backups"
+EXPORT_DIR = r"P:\Manufacturing\Inventory\Backups"
 
 KEEP_LAST = 5
 
@@ -15,7 +15,7 @@ def export_excel():
     conn = sqlite3.connect(DB_PATH)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    file_path = os.path.join(EXPORT_DIR, f"inventory_backup_{timestamp}.xlsx")
+    file_path = os.path.join(EXPORT_DIR, f"backup_{timestamp}.xlsx")
 
     with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
         pd.read_sql_query("SELECT * FROM inventory", conn).to_excel(writer, sheet_name="inventory", index=False)
@@ -26,7 +26,7 @@ def export_excel():
 
 def cleanup_old_files():
     files = sorted(
-        Path(EXPORT_DIR).glob("inventory_backup_*.xlsx"),
+        Path(EXPORT_DIR).glob("backup_*.xlsx"),
         key=lambda p: p.stat().st_mtime
     )
 
