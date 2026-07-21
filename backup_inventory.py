@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 DB_PATH = r"C:\InventoryApp\inventory.db"
-EXPORT_DIR = r"P:\Manufacturing\Inventory\Backups"
+EXPORT_DIR = r"P:\Manufacturing\Jobs\Inventory\Backups"
 
 KEEP_LAST = 5
 
