@@ -37,13 +37,17 @@
   </head>
   
   <body>
-    <nav class="navbar navbar-expand-lg navbar-light mb-4">
+    <nav class="navbar navbar-expand-lg navbar-light mb-4 shadow-sm">
+      </div>
+        <img src="{{ url_for('static', filename='ptech-logo.webp') }}" alt="PrymeTech Logo" class="img-fluid" style="max-height: 75px;">
+      </div>
+
       <div class="container-fluid">
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-5 mb-2 mb-lg-0">
+          <ul class="navbar-nav ms-4 mb-2 mb-lg-0">
             <li class="nav-item">
               <a class="nav-link{% if request.path.endswith('/') %} active{% endif %}" href="{{ url_for('inventory_list') }}">Master Inventory</a>
             </li>
@@ -54,10 +58,8 @@
               <a class="nav-link{% if request.path.startswith('/dashboard') %} active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
             </li>
           </ul>
-        </div>
-          <img src="{{ url_for('static', filename='ptech-logo.webp') }}" alt="PrymeTech Logo" class="img-fluid" style="max-height: 75px;">
-      </div>
     </nav>
+    
     <div class="container">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
