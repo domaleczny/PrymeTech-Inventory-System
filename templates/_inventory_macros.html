@@ -1,5 +1,5 @@
 {# _inventory_macros.html #}
-{% macro search_form(list_route, customers, search, customer, low_stock, location, add_modal_id) %}
+{% macro search_form(list_route, customers, search, customer, low_stock, location, add_modal_id, sort='') %}
 
 <style>
   .supplier-btn {
@@ -115,7 +115,7 @@
     </div>
   </div>
   <button type="submit" hidden></button>
-{% if search or customer or location or low_stock %}
+{% if search or customer or location or low_stock or sort %}
   <div>
     <a class="btn btn-outline-secondary" style="border-radius: 1.25rem;"
        href="{{ url_for(list_route) }}">

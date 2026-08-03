@@ -32,7 +32,7 @@ python -c "import sqlite3, os; conn=sqlite3.connect('inventory.db'); conn.execut
 python app.py
 ```
 
-The Flask UI will be available at `http://127.0.0.1:5000`.
+The Flask UI will be available at `http://192.168.1.46:5000`.
 
 ## CLI Usage
 
@@ -149,14 +149,6 @@ Run unit tests:
 
 ```bash
 python -m unittest discover -s tests
-```
-
-## Sample fixture generation
-
-A helper script is included to generate a sample Excel fixture in `tests/fixtures`:
-
-```bash
-python generate_sample_fixture.py
 ```
 
 ## Notes

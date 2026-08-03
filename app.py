@@ -4,6 +4,7 @@ import tempfile
 from flask import Flask, after_this_request, json, render_template, request, redirect, url_for, flash, send_file, jsonify
 from werkzeug.utils import secure_filename
 from waitress import serve
+from datetime import datetime
 
 import import_inventory
 
@@ -40,10 +41,15 @@ def parse_form_int(field_name, default=0):
 def inventory_list():
     page = int(request.args.get("page", 1))
     per_page = 25
+
     low_stock = request.args.get("low_stock") == "1"
     location = request.args.get("location", "").strip()
     search = request.args.get("search", "").strip()
     customer = request.args.get("customer", "").strip()
+
+    # New sort parameters
+    sort = request.args.get("sort", "")
+    order = request.args.get("order", "desc")
 
     conn = get_conn()
     rows = import_inventory.inventory_query(
@@ -53,6 +59,17 @@ def inventory_list():
         customer=customer,
         search=search,
     )
+
+    # Sort by last modified if requested
+    if sort == "last_modified":
+        rows = sorted(
+            rows,
+            key=lambda row: (
+                datetime.strptime(row["last_modify_date"], "%m-%d-%Y")
+                if row["last_modify_date"] else datetime.min
+            ),
+            reverse=(order == "desc")
+        )
 
     customer_rows = conn.execute("""
         SELECT DISTINCT customer
@@ -80,6 +97,8 @@ def inventory_list():
         location=location or "",
         customer=customer or "",
         search=search or "",
+        sort=sort,
+        order=order,
     )
 
 @app.route("/probe-inventory")
